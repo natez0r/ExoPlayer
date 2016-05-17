@@ -32,6 +32,7 @@ import android.view.Surface;
 
 import java.io.IOException;
 import java.text.NumberFormat;
+import java.util.Date;
 import java.util.Locale;
 
 /**
@@ -131,6 +132,11 @@ public final class LogcatLogger implements ExoPlayer.Listener,
   public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees,
       float pixelWidthHeightRatio) {
     Log.i(tag, "Video size changed: " + width + "x" + height);
+  }
+
+  @Override
+  public void onProgramDateTime(final Date programDateTime) {
+    Log.i(tag, "Program date time: " + programDateTime);
   }
 
   @Override

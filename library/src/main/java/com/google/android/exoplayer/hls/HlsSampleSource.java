@@ -37,6 +37,7 @@ import android.os.SystemClock;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.LinkedList;
 
 /**
@@ -47,7 +48,13 @@ public final class HlsSampleSource implements SampleSource, SampleSourceReader, 
   /**
    * Interface definition for a callback to be notified of {@link HlsSampleSource} events.
    */
-  public interface EventListener extends BaseChunkSampleSourceEventListener {}
+  public interface EventListener extends BaseChunkSampleSourceEventListener {
+    /**
+     * @param programDateTime Provided whenever a chunk has been loaded with
+     *                        a server-provided program date time.
+     */
+    void onProgramDateTime(final Date programDateTime);
+  }
 
   /**
    * The default minimum number of times to retry loading data prior to failing.
@@ -430,6 +437,7 @@ public final class HlsSampleSource implements SampleSource, SampleSourceReader, 
       notifyLoadCompleted(currentLoadable.bytesLoaded(), currentTsLoadable.type,
           currentTsLoadable.trigger, currentTsLoadable.format, currentTsLoadable.startTimeUs,
           currentTsLoadable.endTimeUs, now, loadDurationMs);
+      notifyProgramDateTime(currentTsLoadable.programDateTime);
     } else {
       notifyLoadCompleted(currentLoadable.bytesLoaded(), currentLoadable.type,
           currentLoadable.trigger, currentLoadable.format, -1, -1, now, loadDurationMs);
@@ -798,6 +806,17 @@ public final class HlsSampleSource implements SampleSource, SampleSourceReader, 
         public void run() {
           eventListener.onLoadCompleted(eventSourceId, bytesLoaded, type, trigger, format,
               usToMs(mediaStartTimeUs), usToMs(mediaEndTimeUs), elapsedRealtimeMs, loadDurationMs);
+        }
+      });
+    }
+  }
+
+  private void notifyProgramDateTime(final Date programDateTime) {
+    if (eventHandler != null && eventListener != null && programDateTime != null) {
+      eventHandler.post(new Runnable()  {
+        @Override
+        public void run() {
+          eventListener.onProgramDateTime(programDateTime);
         }
       });
     }

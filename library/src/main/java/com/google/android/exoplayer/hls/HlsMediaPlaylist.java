@@ -17,6 +17,7 @@ package com.google.android.exoplayer.hls;
 
 import com.google.android.exoplayer.C;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -38,10 +39,11 @@ public final class HlsMediaPlaylist extends HlsPlaylist {
     public final String encryptionIV;
     public final long byterangeOffset;
     public final long byterangeLength;
+    public final Date programDateTime;
 
     public Segment(String uri, double durationSecs, int discontinuitySequenceNumber,
         long startTimeUs, boolean isEncrypted, String encryptionKeyUri, String encryptionIV,
-        long byterangeOffset, long byterangeLength) {
+        long byterangeOffset, long byterangeLength, final Date programDateTime) {
       this.url = uri;
       this.durationSecs = durationSecs;
       this.discontinuitySequenceNumber = discontinuitySequenceNumber;
@@ -51,6 +53,7 @@ public final class HlsMediaPlaylist extends HlsPlaylist {
       this.encryptionIV = encryptionIV;
       this.byterangeOffset = byterangeOffset;
       this.byterangeLength = byterangeLength;
+      this.programDateTime = programDateTime;
     }
 
     @Override

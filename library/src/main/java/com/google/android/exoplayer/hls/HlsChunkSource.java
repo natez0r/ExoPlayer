@@ -538,7 +538,7 @@ public class HlsChunkSource implements HlsTrackSelector.Output {
 
     out.chunk = new TsChunk(dataSource, dataSpec, trigger, format, startTimeUs, endTimeUs,
         chunkMediaSequence, segment.discontinuitySequenceNumber, extractorWrapper, encryptionKey,
-        encryptionIv);
+        encryptionIv, segment.programDateTime);
   }
 
   /**

@@ -224,6 +224,12 @@ import java.util.Locale;
         + "prog_index.m3u8", Util.TYPE_HLS),
     new Sample("Apple ID3 metadata", "http://devimages.apple.com/samplecode/adDemo/ad.m3u8",
         Util.TYPE_HLS),
+    new Sample("Big Buck Bunny HLS", "http://www.streambox.fr/playlists/x36xhzz/x36xhzz.m3u8",
+        Util.TYPE_HLS),
+    new Sample("Program Date Time",
+        "https://cdn.rawgit.com/passy/a77dd374b9e2f4bf7a8976fd6e83f4ac/raw/"
+        + "638fc2ac5306f5c2455b0cbe730efe36bc07b78c/media_playlist.m3u8",
+        Util.TYPE_HLS),
   };
 
   public static final Sample[] MISC = new Sample[] {

@@ -26,10 +26,15 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Queue;
 import java.util.regex.Pattern;
 
@@ -43,6 +48,7 @@ public final class HlsPlaylistParser implements UriLoadable.Parser<HlsPlaylist> 
   private static final String MEDIA_TAG = "#EXT-X-MEDIA";
   private static final String DISCONTINUITY_TAG = "#EXT-X-DISCONTINUITY";
   private static final String DISCONTINUITY_SEQUENCE_TAG = "#EXT-X-DISCONTINUITY-SEQUENCE";
+  private static final String PROGRAM_DATE_TIME_TAG = "#EXT-X-PROGRAM-DATE-TIME";
   private static final String MEDIA_DURATION_TAG = "#EXTINF";
   private static final String MEDIA_SEQUENCE_TAG = "#EXT-X-MEDIA-SEQUENCE";
   private static final String TARGET_DURATION_TAG = "#EXT-X-TARGETDURATION";
@@ -85,6 +91,8 @@ public final class HlsPlaylistParser implements UriLoadable.Parser<HlsPlaylist> 
       Pattern.compile(VERSION_TAG + ":(\\d+)\\b");
   private static final Pattern BYTERANGE_REGEX =
       Pattern.compile(BYTERANGE_TAG + ":(\\d+(?:@\\d+)?)\\b");
+  private static final Pattern PROGRAM_DATE_TIME_REGEX =
+      Pattern.compile(PROGRAM_DATE_TIME_TAG + ":([\\d\\-T:\\.\\+]+)\\b");
 
   private static final Pattern METHOD_ATTR_REGEX =
       Pattern.compile(METHOD_ATTR + "=(" + METHOD_NONE + "|" + METHOD_AES128 + ")");
@@ -105,6 +113,15 @@ public final class HlsPlaylistParser implements UriLoadable.Parser<HlsPlaylist> 
   //     HlsParserUtil.compileBooleanAttrPattern(AUTOSELECT_ATTR);
   // private static final Pattern DEFAULT_ATTR_REGEX =
   //     HlsParserUtil.compileBooleanAttrPattern(DEFAULT_ATTR);
+  private static final DateFormat ISO_8601_DATETIME_PARSER_MS = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+      Locale.US);
+  private static final DateFormat ISO_8601_DATETIME_PARSER_NO_MS = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ",
+      Locale.US);
+
+  private static final DateFormat[] ISO_8601_DATETIME_PARSERS = new DateFormat[] {
+      ISO_8601_DATETIME_PARSER_MS,
+      ISO_8601_DATETIME_PARSER_NO_MS
+  };
 
   @Override
   public HlsPlaylist parse(String connectionUrl, InputStream inputStream)
@@ -246,6 +263,8 @@ public final class HlsPlaylistParser implements UriLoadable.Parser<HlsPlaylist> 
     boolean isEncrypted = false;
     String encryptionKeyUri = null;
     String encryptionIV = null;
+    Date programDateTime = null;
+    Date segmentProgramDateTime = null;
 
     String line;
     while (iterator.hasNext()) {
@@ -282,6 +301,16 @@ public final class HlsPlaylistParser implements UriLoadable.Parser<HlsPlaylist> 
         discontinuitySequenceNumber = Integer.parseInt(line.substring(line.indexOf(':') + 1));
       } else if (line.equals(DISCONTINUITY_TAG)) {
         discontinuitySequenceNumber++;
+      } else if (line.startsWith(PROGRAM_DATE_TIME_TAG)) {
+        String datetimeStr = HlsParserUtil.parseStringAttr(line, PROGRAM_DATE_TIME_REGEX, PROGRAM_DATE_TIME_TAG);
+        for (DateFormat parser : ISO_8601_DATETIME_PARSERS) {
+          try {
+            segmentProgramDateTime = parser.parse(datetimeStr);
+            break;
+          } catch (ParseException ignored) {
+            // Date parsing errors should not be fatal as we can potentially backfill.
+          }
+        }
       } else if (!line.startsWith("#")) {
         String segmentEncryptionIV;
         if (!isEncrypted) {
@@ -295,11 +324,21 @@ public final class HlsPlaylistParser implements UriLoadable.Parser<HlsPlaylist> 
         if (segmentByterangeLength == C.LENGTH_UNBOUNDED) {
           segmentByterangeOffset = 0;
         }
+        if (segmentProgramDateTime == null) {
+          segmentProgramDateTime = programDateTime == null ? null : (Date) programDateTime.clone();
+        } else {
+          programDateTime = (Date) segmentProgramDateTime.clone();
+        }
         segments.add(new Segment(line, segmentDurationSecs, discontinuitySequenceNumber,
             segmentStartTimeUs, isEncrypted, encryptionKeyUri, segmentEncryptionIV,
-            segmentByterangeOffset, segmentByterangeLength));
+            segmentByterangeOffset, segmentByterangeLength, segmentProgramDateTime));
+        if (programDateTime != null) {
+          // Advance the time by the segment length, which may be overridden in the next iteration.
+          programDateTime.setTime(programDateTime.getTime() + Math.round(segmentDurationSecs * 1000));
+        }
         segmentStartTimeUs += (long) (segmentDurationSecs * C.MICROS_PER_SECOND);
         segmentDurationSecs = 0.0;
+        segmentProgramDateTime = null;
         if (segmentByterangeLength != C.LENGTH_UNBOUNDED) {
           segmentByterangeOffset += segmentByterangeLength;
         }

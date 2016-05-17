@@ -25,6 +25,7 @@ import com.google.android.exoplayer.upstream.DataSpec;
 import com.google.android.exoplayer.util.Util;
 
 import java.io.IOException;
+import java.util.Date;
 
 /**
  * An MPEG2TS chunk.
@@ -40,6 +41,12 @@ public final class TsChunk extends MediaChunk {
    * The wrapped extractor into which this chunk is being consumed.
    */
   public final HlsExtractorWrapper extractorWrapper;
+
+  /**
+   * Nullable, may contain a server-provided timestamp for
+   * the current chunk.
+   */
+  public final Date programDateTime;
 
   private final boolean isEncrypted;
 
@@ -61,13 +68,15 @@ public final class TsChunk extends MediaChunk {
    */
   public TsChunk(DataSource dataSource, DataSpec dataSpec, int trigger, Format format,
       long startTimeUs, long endTimeUs, int chunkIndex, int discontinuitySequenceNumber,
-      HlsExtractorWrapper extractorWrapper, byte[] encryptionKey, byte[] encryptionIv) {
+      HlsExtractorWrapper extractorWrapper, byte[] encryptionKey, byte[] encryptionIv,
+      Date programDateTime) {
     super(buildDataSource(dataSource, encryptionKey, encryptionIv), dataSpec, trigger, format,
         startTimeUs, endTimeUs, chunkIndex);
     this.discontinuitySequenceNumber = discontinuitySequenceNumber;
     this.extractorWrapper = extractorWrapper;
     // Note: this.dataSource and dataSource may be different.
     this.isEncrypted = this.dataSource instanceof Aes128DataSource;
+    this.programDateTime = programDateTime;
   }
 
   @Override

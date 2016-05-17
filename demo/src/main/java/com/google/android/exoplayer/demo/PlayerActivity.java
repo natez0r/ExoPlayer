@@ -73,6 +73,7 @@ import android.widget.Toast;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -81,7 +82,7 @@ import java.util.Locale;
  */
 public class PlayerActivity extends Activity implements SurfaceHolder.Callback, OnClickListener,
     DemoPlayer.Listener, DemoPlayer.CaptionListener, DemoPlayer.Id3MetadataListener,
-    AudioCapabilitiesReceiver.Listener {
+    AudioCapabilitiesReceiver.Listener, DemoPlayer.HlsSampleListener {
 
   // For use within demo app code.
   public static final String CONTENT_ID_EXTRA = "content_id";
@@ -348,6 +349,7 @@ public class PlayerActivity extends Activity implements SurfaceHolder.Callback, 
       player.addListener(this);
       player.setCaptionListener(this);
       player.setMetadataListener(this);
+      player.setHlsSampleListener(this);
       player.seekTo(playerPosition);
       playerNeedsPrepare = true;
       mediaController.setMediaPlayer(player.getPlayerControl());
@@ -650,6 +652,11 @@ public class PlayerActivity extends Activity implements SurfaceHolder.Callback, 
         Log.i(TAG, String.format("ID3 TimedMetadata %s", id3Frame.id));
       }
     }
+  }
+
+  @Override
+  public void onProgramDateTime(final Date programDateTime) {
+    Log.i(TAG, String.format("Program date time: %s", programDateTime));
   }
 
   // SurfaceHolder.Callback implementation

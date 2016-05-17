@@ -50,6 +50,7 @@ import android.view.Surface;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -146,6 +147,13 @@ public class DemoPlayer implements ExoPlayer.Listener, ChunkSampleSource.EventLi
     void onId3Metadata(List<Id3Frame> id3Frames);
   }
 
+  /**
+   * A listener for receiving custom events from HLS streams.
+   */
+  public interface HlsSampleListener {
+    void onProgramDateTime(final Date programDateTime);
+  }
+
   // Constants pulled into this class for convenience.
   public static final int STATE_IDLE = ExoPlayer.STATE_IDLE;
   public static final int STATE_PREPARING = ExoPlayer.STATE_PREPARING;
@@ -186,6 +194,7 @@ public class DemoPlayer implements ExoPlayer.Listener, ChunkSampleSource.EventLi
 
   private CaptionListener captionListener;
   private Id3MetadataListener id3MetadataListener;
+  private HlsSampleListener hlsSampleListener;
   private InternalErrorListener internalErrorListener;
   private InfoListener infoListener;
 
@@ -228,6 +237,10 @@ public class DemoPlayer implements ExoPlayer.Listener, ChunkSampleSource.EventLi
 
   public void setMetadataListener(Id3MetadataListener listener) {
     id3MetadataListener = listener;
+  }
+
+  public void setHlsSampleListener(HlsSampleListener listener) {
+    hlsSampleListener = listener;
   }
 
   public void setSurface(Surface surface) {
@@ -525,6 +538,13 @@ public class DemoPlayer implements ExoPlayer.Listener, ChunkSampleSource.EventLi
   public void onMetadata(List<Id3Frame> id3Frames) {
     if (id3MetadataListener != null && getSelectedTrack(TYPE_METADATA) != TRACK_DISABLED) {
       id3MetadataListener.onId3Metadata(id3Frames);
+    }
+  }
+
+  @Override
+  public void onProgramDateTime(Date programDateTime) {
+    if (hlsSampleListener != null) {
+      hlsSampleListener.onProgramDateTime(programDateTime);
     }
   }
 
