@@ -135,8 +135,8 @@ public final class LogcatLogger implements ExoPlayer.Listener,
   }
 
   @Override
-  public void onProgramDateTime(final Date programDateTime) {
-    Log.i(tag, "Program date time: " + programDateTime);
+  public void onProgramDateTime(Date programDateTime, long startTimeUs) {
+    Log.i(tag, "Program date time " + programDateTime + " at play time " + startTimeUs);
   }
 
   @Override

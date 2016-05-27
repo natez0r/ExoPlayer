@@ -21,6 +21,9 @@ import com.google.android.exoplayer.upstream.BandwidthMeter;
 
 import android.widget.TextView;
 
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
 /**
  * A helper class for periodically updating debug information displayed by a {@link TextView}.
  */
@@ -51,6 +54,10 @@ public final class DebugTextViewHelper implements Runnable {
      */
     CodecCounters getCodecCounters();
 
+    /**
+     * Get a program date time for the current position if available, or null.
+     */
+    Date getProgramDateTime(long currentPosition, TimeUnit timeUnit);
   }
 
   private static final int REFRESH_INTERVAL_MS = 1000;
@@ -94,7 +101,7 @@ public final class DebugTextViewHelper implements Runnable {
 
   private String getRenderString() {
     return getTimeString() + " " + getQualityString() + " " + getBandwidthString() + " "
-        + getVideoCodecCountersString();
+        + getVideoCodecCountersString() + " " + getProgramDateTimeString();
   }
 
   private String getTimeString() {
@@ -115,6 +122,11 @@ public final class DebugTextViewHelper implements Runnable {
     } else {
       return "bw:" + (bandwidthMeter.getBitrateEstimate() / 1000);
     }
+  }
+
+  private String getProgramDateTimeString() {
+    final Date time = debuggable.getProgramDateTime(debuggable.getCurrentPosition(), TimeUnit.MILLISECONDS);
+    return time == null ? "pdt:?" : "pdt:" + time.toString();
   }
 
   private String getVideoCodecCountersString() {

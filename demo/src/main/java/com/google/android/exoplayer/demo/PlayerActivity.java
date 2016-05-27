@@ -655,8 +655,9 @@ public class PlayerActivity extends Activity implements SurfaceHolder.Callback, 
   }
 
   @Override
-  public void onProgramDateTime(final Date programDateTime) {
-    Log.i(TAG, String.format("Program date time: %s", programDateTime));
+  public void onProgramDateTime(final Date programDateTime, final long startTimeUs) {
+    Log.i(TAG, String.format("Program date time %s at play time %s", programDateTime, startTimeUs / 1000));
+    player.updateProgramDateTime(programDateTime, startTimeUs);
   }
 
   // SurfaceHolder.Callback implementation

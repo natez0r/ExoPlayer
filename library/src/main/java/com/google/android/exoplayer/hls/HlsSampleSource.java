@@ -52,8 +52,10 @@ public final class HlsSampleSource implements SampleSource, SampleSourceReader, 
     /**
      * @param programDateTime Provided whenever a chunk has been loaded with
      *                        a server-provided program date time.
+     * @param startTimeUs Timestamp of the playback time when the segment
+     *                    is scheduled to play.
      */
-    void onProgramDateTime(final Date programDateTime);
+    void onProgramDateTime(final Date programDateTime, final long startTimeUs);
   }
 
   /**
@@ -437,7 +439,7 @@ public final class HlsSampleSource implements SampleSource, SampleSourceReader, 
       notifyLoadCompleted(currentLoadable.bytesLoaded(), currentTsLoadable.type,
           currentTsLoadable.trigger, currentTsLoadable.format, currentTsLoadable.startTimeUs,
           currentTsLoadable.endTimeUs, now, loadDurationMs);
-      notifyProgramDateTime(currentTsLoadable.programDateTime);
+      notifyProgramDateTime(currentTsLoadable.programDateTime, currentTsLoadable.startTimeUs);
     } else {
       notifyLoadCompleted(currentLoadable.bytesLoaded(), currentLoadable.type,
           currentLoadable.trigger, currentLoadable.format, -1, -1, now, loadDurationMs);
@@ -811,12 +813,12 @@ public final class HlsSampleSource implements SampleSource, SampleSourceReader, 
     }
   }
 
-  private void notifyProgramDateTime(final Date programDateTime) {
+  private void notifyProgramDateTime(final Date programDateTime, final long startTimeUs) {
     if (eventHandler != null && eventListener != null && programDateTime != null) {
       eventHandler.post(new Runnable()  {
         @Override
         public void run() {
-          eventListener.onProgramDateTime(programDateTime);
+          eventListener.onProgramDateTime(programDateTime, startTimeUs);
         }
       });
     }

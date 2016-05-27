@@ -52,7 +52,10 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A wrapper around {@link ExoPlayer} that provides a higher level interface. It can be prepared
@@ -151,7 +154,7 @@ public class DemoPlayer implements ExoPlayer.Listener, ChunkSampleSource.EventLi
    * A listener for receiving custom events from HLS streams.
    */
   public interface HlsSampleListener {
-    void onProgramDateTime(final Date programDateTime);
+    void onProgramDateTime(final Date programDateTime, final long startTimeUs);
   }
 
   // Constants pulled into this class for convenience.
@@ -197,6 +200,7 @@ public class DemoPlayer implements ExoPlayer.Listener, ChunkSampleSource.EventLi
   private HlsSampleListener hlsSampleListener;
   private InternalErrorListener internalErrorListener;
   private InfoListener infoListener;
+  private NavigableMap<Long, Date> programDateTimes = new TreeMap<>();
 
   public DemoPlayer(RendererBuilder rendererBuilder) {
     this.rendererBuilder = rendererBuilder;
@@ -292,6 +296,10 @@ public class DemoPlayer implements ExoPlayer.Listener, ChunkSampleSource.EventLi
     } else {
       setSelectedTrack(TYPE_VIDEO, videoTrackToRestore);
     }
+  }
+
+  public void updateProgramDateTime(final Date programDateTime, final long startTimeUs) {
+    programDateTimes.put(startTimeUs, programDateTime);
   }
 
   public void prepare() {
@@ -430,6 +438,18 @@ public class DemoPlayer implements ExoPlayer.Listener, ChunkSampleSource.EventLi
   }
 
   @Override
+  public Date getProgramDateTime(long currentPosition, TimeUnit timeUnit) {
+    final Long key = programDateTimes.floorKey(timeUnit.toMicros(currentPosition));
+    if (key != null) {
+      final long diff = timeUnit.toMillis(currentPosition) - (key / 1000);
+      return new Date(programDateTimes.get(key).getTime() + diff);
+    }
+
+    return null;
+  }
+
+
+  @Override
   public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees,
       float pixelWidthHeightRatio) {
     for (Listener listener : listeners) {
@@ -542,9 +562,9 @@ public class DemoPlayer implements ExoPlayer.Listener, ChunkSampleSource.EventLi
   }
 
   @Override
-  public void onProgramDateTime(Date programDateTime) {
+  public void onProgramDateTime(Date programDateTime, final long startTimeUs) {
     if (hlsSampleListener != null) {
-      hlsSampleListener.onProgramDateTime(programDateTime);
+      hlsSampleListener.onProgramDateTime(programDateTime, startTimeUs);
     }
   }
 
