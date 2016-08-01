@@ -190,4 +190,53 @@ public class HlsMediaPlaylistParserTest extends TestCase {
     }
   }
 
+  public void testParseLiveMediaPlaylistWithZFormattedDateTime() throws IOException {
+    String playlistUrl = "https://example.com/test.m3u8";
+    String playlistString = "#EXTM3U\n"
+            + "#EXT-X-VERSION:3\n"
+            + "#EXT-X-TARGETDURATION:5\n"
+            + "#EXT-X-PROGRAM-DATE-TIME:2016-05-09T17:50:44Z\n"
+            + "#EXT-X-MEDIA-SEQUENCE:0\n"
+            + "#EXTINF:5.005,\n"
+            + "17/50/44.ts\n"
+            + "#EXTINF:5.005,\n"
+            + "17/50/49.ts\n"
+            + "#EXTINF:5.005,\n"
+            + "17/50/54.ts\n"
+            + "#EXTINF:5.005,\n"
+            + "17/50/59.ts\n"
+            + "#EXTINF:5.005,\n"
+            + "17/51/04.ts\n"
+            + "#EXTINF:5.005,\n"
+            + "17/51/09.ts";
+
+    InputStream inputStream = new ByteArrayInputStream(
+            playlistString.getBytes(Charset.forName(C.UTF8_NAME)));
+    try {
+      HlsPlaylist playlist = new HlsPlaylistParser().parse(playlistUrl, inputStream);
+      assertNotNull(playlist);
+      assertEquals(HlsPlaylist.TYPE_MEDIA, playlist.type);
+
+      HlsMediaPlaylist mediaPlaylist = (HlsMediaPlaylist) playlist;
+
+      assertEquals(0, mediaPlaylist.mediaSequence);
+      assertEquals(5, mediaPlaylist.targetDurationSecs);
+      assertEquals(3, mediaPlaylist.version);
+      assertEquals(true, mediaPlaylist.live);
+      List<HlsMediaPlaylist.Segment> segments = mediaPlaylist.segments;
+      assertNotNull(segments);
+      assertEquals(6, segments.size());
+
+      assertEquals(5.005, segments.get(0).durationSecs);
+      assertEquals(1462816244000L, segments.get(0).programDateTime.getTime());
+      assertEquals("17/50/44.ts", segments.get(0).url);
+
+      assertEquals(5.005, segments.get(1).durationSecs);
+      assertEquals(1462816249005L, segments.get(1).programDateTime.getTime());
+      assertEquals("17/50/49.ts", segments.get(1).url);
+    } catch (ParserException exception) {
+      fail(exception.getMessage());
+    }
+  }
+
 }

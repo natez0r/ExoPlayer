@@ -26,15 +26,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Queue;
 import java.util.regex.Pattern;
 
@@ -92,7 +88,7 @@ public final class HlsPlaylistParser implements UriLoadable.Parser<HlsPlaylist> 
   private static final Pattern BYTERANGE_REGEX =
       Pattern.compile(BYTERANGE_TAG + ":(\\d+(?:@\\d+)?)\\b");
   private static final Pattern PROGRAM_DATE_TIME_REGEX =
-      Pattern.compile(PROGRAM_DATE_TIME_TAG + ":([\\d\\-T:\\.\\+]+)\\b");
+      Pattern.compile(PROGRAM_DATE_TIME_TAG + ":(.*)");
 
   private static final Pattern METHOD_ATTR_REGEX =
       Pattern.compile(METHOD_ATTR + "=(" + METHOD_NONE + "|" + METHOD_AES128 + ")");
@@ -113,15 +109,6 @@ public final class HlsPlaylistParser implements UriLoadable.Parser<HlsPlaylist> 
   //     HlsParserUtil.compileBooleanAttrPattern(AUTOSELECT_ATTR);
   // private static final Pattern DEFAULT_ATTR_REGEX =
   //     HlsParserUtil.compileBooleanAttrPattern(DEFAULT_ATTR);
-  private static final DateFormat ISO_8601_DATETIME_PARSER_MS = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ",
-      Locale.US);
-  private static final DateFormat ISO_8601_DATETIME_PARSER_NO_MS = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ",
-      Locale.US);
-
-  private static final DateFormat[] ISO_8601_DATETIME_PARSERS = new DateFormat[] {
-      ISO_8601_DATETIME_PARSER_MS,
-      ISO_8601_DATETIME_PARSER_NO_MS
-  };
 
   @Override
   public HlsPlaylist parse(String connectionUrl, InputStream inputStream)
@@ -303,14 +290,7 @@ public final class HlsPlaylistParser implements UriLoadable.Parser<HlsPlaylist> 
         discontinuitySequenceNumber++;
       } else if (line.startsWith(PROGRAM_DATE_TIME_TAG)) {
         String datetimeStr = HlsParserUtil.parseStringAttr(line, PROGRAM_DATE_TIME_REGEX, PROGRAM_DATE_TIME_TAG);
-        for (DateFormat parser : ISO_8601_DATETIME_PARSERS) {
-          try {
-            segmentProgramDateTime = parser.parse(datetimeStr);
-            break;
-          } catch (ParseException ignored) {
-            // Date parsing errors should not be fatal as we can potentially backfill.
-          }
-        }
+        segmentProgramDateTime = Iso8601Util.parseDateTime(datetimeStr);
       } else if (!line.startsWith("#")) {
         String segmentEncryptionIV;
         if (!isEncrypted) {
